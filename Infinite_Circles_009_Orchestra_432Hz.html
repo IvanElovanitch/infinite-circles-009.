@@ -1,0 +1,118 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Codex Eternal — Infinite Circles 009 — Gallery Edition — Celestial Orchestra A432</title><style>body{margin:0;background:#0d1020;color:white;font-family:system-ui,-apple-system,sans-serif}.wrap{max-width:720px;margin:auto;padding:16px}.stage{position:relative;aspect-ratio:1;background:black;border-radius:14px;overflow:hidden}canvas{display:block;width:100%;height:100%;touch-action:none}.top,.status{position:absolute;left:12px;font-size:11px;letter-spacing:1px;pointer-events:none}.top{top:12px}.status{bottom:12px}.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}button{border:0;border-radius:9px;background:#1d4ed8;color:white;padding:12px 3px;font:inherit;font-size:14px;cursor:pointer}button.active{background:#6d28d9}.panel{border:1px solid #40445b;border-radius:12px;padding:16px;margin-top:12px}label{display:flex;justify-content:space-between;font-size:14px;margin:12px 0 5px}input[type=range]{width:100%;accent-color:#a855f7}p{font-size:12px;opacity:.7;line-height:1.5}.wrap{max-width:900px;padding:0}.stage{border-radius:0}.grid,.panel,main>p,.top,.status{display:none!important}body{background:#000}</style><style id="codex-sound-style">#codex-sound{position:fixed;right:14px;bottom:18px;z-index:20;display:flex;gap:8px;align-items:center;background:rgba(8,10,28,.75);border:1px solid rgba(185,165,255,.35);border-radius:30px;padding:8px 11px;backdrop-filter:blur(10px)}#codex-sound button{background:#5032a0;border-radius:22px;padding:9px 13px;font-size:13px;white-space:nowrap}#codex-sound input{width:80px;accent-color:#a78bfa}#codex-sound label{display:none}#codex-sound .hint{font-size:11px;color:#ddd}#codex-sound #sound-test{background:#235c82}</style></head><body><main class="wrap" id="codex-c009"><div class="stage"><canvas></canvas><div class="top">CODEX ETERNAL · 009</div><div class="status" id="c009-status">Journey + Transform</div></div><div class="grid"><button data-mode="journey">🚀 Journey</button><button data-mode="transform">🌀 Transform</button><button data-mode="both" class="active">✨ Both</button></div><div class="grid"><button id="c009-play">⏸ Pause</button><button id="c009-reverse">↔ Reverse</button><button id="c009-reset">↺ Reset</button></div><div class="panel"><label>Journey speed <span id="c009-speed-label">25 / 100</span></label><input id="c009-speed" type="range" min="0" max="100" value="25"><label>Transformation <span id="c009-morph-label">45%</span></label><input id="c009-morph" type="range" min="0" max="100" value="45"><label>Colour movement <span id="c009-colour-label">40%</span></label><input id="c009-colour" type="range" min="0" max="100" value="40"><label>Smoothness <span id="c009-smooth-label">80%</span></label><input id="c009-smooth" type="range" min="0" max="100" value="80"><label>Depth <span id="c009-depth-label">75%</span></label><input id="c009-depth" type="range" min="0" max="100" value="75"><label>✨ Jewel brightness <span id="c009-bright-label">120%</span></label><input id="c009-bright" type="range" min="100" max="175" value="120" step="5"><label>🌈 Jewel saturation <span id="c009-sat-label">125%</span></label><input id="c009-sat" type="range" min="100" max="180" value="125" step="5"><label>💎 Selected circle glow <span id="c009-spark-label">45%</span></label><input id="c009-spark" type="range" min="0" max="100" value="45" step="5"></div><p>Movement and circular geometry match 007. Brightness and saturation are adjusted outside WebGL; selected circle glow adds local luminous accents. Runs locally in Chrome.</p></main><div id="codex-sound"><button id="sound-toggle" type="button">🎻 Orchestra 432 Hz</button><label for="sound-volume">Volume</label><input id="sound-volume" type="range" min="0" max="100" value="65" aria-label="Music volume"><button id="sound-test" type="button">🔔 Test</button><span class="hint" id="sound-state">Orchestra off</span></div><script>
+(function(){
+const root=document.getElementById('codex-c009');if(root.dataset.ready)return;root.dataset.ready='1';
+const canvas=root.querySelector('canvas'),gl=canvas.getContext('webgl',{alpha:false,antialias:false}),status=root.querySelector('#c009-status');
+if(!gl){status.textContent='WebGL unavailable';return}
+const vs=`attribute vec2 p;void main(){gl_Position=vec4(p,0.,1.);}`;
+const fs=`precision highp float;
+uniform vec2 res;
+uniform float travel,shape,hue,depth,spark;
+#define TAU 6.28318530718
+vec3 palette(float t){
+vec3 a=vec3(.54,.48,.58);
+vec3 b=vec3(.46,.5,.42);
+vec3 d=vec3(.02,.31,.65);
+return a+b*cos(TAU*(t+d));
+}
+void main(){
+vec2 uv=(gl_FragCoord.xy-.5*res)/min(res.x,res.y);
+float r=max(length(uv),.000001);
+float a=atan(uv.y,uv.x);
+float z=-log2(r*1.8)+travel;
+float ring=fract(z);
+float layer=floor(z);
+float twist=shape*(.45*sin(a*4.+z*1.3)+.25*cos(z*2.1));
+float ang=a+twist;
+float petal=cos(ang*8.);
+float circular=abs(sin(TAU*(ring+.065*petal)));
+float band=exp(-95.*pow(circular-.32,2.));
+float fine=exp(-140.*pow(sin(TAU*(ring*3.+.12*cos(ang*16.)))-.45,2.));
+float beads=exp(-40.*pow(sin(ang*16.)*.3+ring-.5,2.));
+float intricate=band+.55*fine*depth+.4*beads*depth;
+float glow=exp(-9.*abs(ring-.32))*.4;
+float t=layer*.11+hue+.12*ring+.05*petal;
+vec3 col=palette(t);
+col*=.12+1.25*intricate;
+col+=palette(t+.22)*glow;
+col+=.09*palette(t+.4);
+// Brighten only thin parts of existing circular detail, not the background.
+float accent=band*(.55+.45*cos(ang*8.+layer*.7));
+accent+=.35*fine*depth*(.5+.5*sin(layer*1.1));
+col+=spark*accent*vec3(.22,.68,1.0);
+col*=1.-.5*exp(-r*8.);
+col=1.-exp(-col*1.25);
+gl_FragColor=vec4(pow(max(col,0.),vec3(.82)),1.);
+}`;
+function sh(t,s){const o=gl.createShader(t);gl.shaderSource(o,s);gl.compileShader(o);if(!gl.getShaderParameter(o,gl.COMPILE_STATUS)){status.textContent='Graphics shader error: '+gl.getShaderInfoLog(o);return null}return o}
+const pr=gl.createProgram();gl.attachShader(pr,sh(gl.VERTEX_SHADER,vs));gl.attachShader(pr,sh(gl.FRAGMENT_SHADER,fs));gl.linkProgram(pr);if(!gl.getProgramParameter(pr,gl.LINK_STATUS)){status.textContent='Graphics linking error';return}gl.useProgram(pr);
+const buf=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,buf);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,1,-1,-1,1,1,1]),gl.STATIC_DRAW);
+const a=gl.getAttribLocation(pr,'p');gl.enableVertexAttribArray(a);gl.vertexAttribPointer(a,2,gl.FLOAT,false,0,0);
+const u={};['res','travel','shape','hue','depth','spark'].forEach(k=>u[k]=gl.getUniformLocation(pr,k));
+const bright=root.querySelector('#c009-bright'),sat=root.querySelector('#c009-sat'),spark=root.querySelector('#c009-spark');
+function updateColour(){canvas.style.filter='brightness('+bright.value+'%) saturate('+sat.value+'%)';root.querySelector('#c009-bright-label').textContent=bright.value+'%';root.querySelector('#c009-sat-label').textContent=sat.value+'%'}
+bright.addEventListener('input',updateColour);sat.addEventListener('input',updateColour);spark.addEventListener('input',()=>root.querySelector('#c009-spark-label').textContent=spark.value+'%');updateColour();
+const inputs={speed:root.querySelector('#c009-speed'),morph:root.querySelector('#c009-morph'),colour:root.querySelector('#c009-colour'),smooth:root.querySelector('#c009-smooth'),depth:root.querySelector('#c009-depth')};
+let mode='both',playing=true,dir=1,travel=0,phase=0,hue=0,last=0,velocity=0,shape=0;
+function buttons(){root.querySelectorAll('[data-mode]').forEach(b=>{b.classList.toggle('active',b.dataset.mode===mode)})}
+function frame(now){
+const dt=Math.min((now-last)/1000||0,.05);last=now;
+const smoothing=.7+Number(inputs.smooth.value)/100*9;
+if(playing){
+const target=Number(inputs.speed.value)/100;
+velocity+=(target-velocity)*(1-Math.exp(-dt*smoothing));
+if(mode==='journey'||mode==='both')travel+=dt*velocity*.6*dir;
+if(mode==='transform'||mode==='both'){
+phase+=dt*(.18+Number(inputs.morph.value)/100*.55)*dir;
+const targetShape=Number(inputs.morph.value)/100*Math.sin(phase);
+shape+=(targetShape-shape)*(1-Math.exp(-dt*smoothing));
+}else{shape+=(0-shape)*(1-Math.exp(-dt*smoothing));}
+hue+=dt*Number(inputs.colour.value)/100*.04;
+}
+const r=canvas.getBoundingClientRect(),w=Math.max(1,Math.round(r.width*.85)),h=Math.max(1,Math.round(r.height*.85));
+if(canvas.width!==w||canvas.height!==h){canvas.width=w;canvas.height=h;gl.viewport(0,0,w,h)}
+gl.uniform2f(u.res,w,h);gl.uniform1f(u.travel,travel);gl.uniform1f(u.shape,shape);gl.uniform1f(u.hue,hue);gl.uniform1f(u.depth,Number(inputs.depth.value)/100);gl.uniform1f(u.spark,Number(spark.value)/100);
+gl.drawArrays(gl.TRIANGLE_STRIP,0,4);
+for(const k of ['speed','morph','colour','smooth','depth'])root.querySelector('#c009-'+k+'-label').textContent=inputs[k].value+(k==='speed'?' / 100':'%');
+status.textContent=mode==='both'?'Journey + Transform · Living tunnel':mode==='journey'?'Journey · Infinite tunnel':'Transform · Living geometry';
+requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+root.querySelectorAll('[data-mode]').forEach(b=>b.onclick=()=>{mode=b.dataset.mode;playing=true;root.querySelector('#c009-play').textContent='⏸ Pause';buttons()});
+root.querySelector('#c009-play').onclick=e=>{playing=!playing;e.target.textContent=playing?'⏸ Pause':'▶ Play';if(!playing)status.textContent='Paused'};
+root.querySelector('#c009-reverse').onclick=()=>dir*=-1;
+root.querySelector('#c009-reset').onclick=()=>{travel=0;phase=0;hue=0;velocity=0;shape=0;dir=1;playing=true;root.querySelector('#c009-play').textContent='⏸ Pause'};
+buttons();
+})();
+</script><script>
+(function(){
+const toggle=document.getElementById('sound-toggle'),test=document.getElementById('sound-test'),volume=document.getElementById('sound-volume'),state=document.getElementById('sound-state');
+const AC=window.AudioContext||window.webkitAudioContext;
+let ctx,master,enabled=false,timer=null,bar=0,voices=[];
+// Equal temperament with A4=432 Hz.
+const hz=n=>432*Math.pow(2,(n-69)/12);
+function setup(){if(ctx)return !!ctx;if(!AC){state.textContent='Audio unavailable';return false;}ctx=new AC();master=ctx.createGain();master.gain.value=0;const comp=ctx.createDynamicsCompressor();comp.threshold.value=-20;comp.ratio.value=3;master.connect(comp);comp.connect(ctx.destination);return true;}
+async function wake(){if(!setup())return false;await ctx.resume();return ctx.state==='running';}
+function gain(){if(ctx)master.gain.setTargetAtTime(enabled?Number(volume.value)/100*.72:0,ctx.currentTime,.15);}
+function voice(note,when,duration,kind,level){
+const f=hz(note),env=ctx.createGain(),filter=ctx.createBiquadFilter();filter.type='lowpass';filter.frequency.value=kind==='harp'?3200:kind==='choir'?1300:kind==='horn'?950:1800;filter.Q.value=.45;
+const attack=kind==='harp'?.025:kind==='horn'?1.3:kind==='choir'?2.4:1.7;
+const release=kind==='harp'?3.7:kind==='horn'?3.2:kind==='choir'?5.0:4.2;
+env.gain.setValueAtTime(.0001,when);env.gain.linearRampToValueAtTime(level,when+attack);if(kind==='harp')env.gain.exponentialRampToValueAtTime(.0001,when+release);else {env.gain.setValueAtTime(level,when+duration);env.gain.exponentialRampToValueAtTime(.0001,when+duration+release);}
+filter.connect(env);env.connect(master);
+const partials=kind==='harp'?[[1,.8,'sine'],[2,.25,'sine'],[3,.08,'sine']]:kind==='choir'?[[1,.65,'sine'],[2,.22,'triangle'],[3,.07,'sine']]:kind==='horn'?[[1,.6,'sawtooth'],[2,.12,'sine']]:[[1,.58,'sawtooth'],[1.003,.23,'sawtooth'],[2,.12,'sine']];
+partials.forEach(([ratio,amp,wave])=>{const o=ctx.createOscillator(),g=ctx.createGain();o.type=wave;o.frequency.setValueAtTime(f*ratio,when);g.gain.value=amp;o.connect(g);g.connect(filter);o.start(when);o.stop(when+duration+release+.15);});
+}
+// Slow four-chord progression: Dmaj9 – Bm7 – Gmaj9 – Aadd9.
+const chords=[[50,57,61,64,66],[47,54,57,62,66],[43,50,57,59,66],[45,52,57,61,64]];
+function schedule(){if(!enabled||ctx.state!=='running')return;const now=ctx.currentTime+.12;const chord=chords[bar%4];
+voice(chord[0]-12,now,12,'horn',.042);
+chord.slice(1).forEach((n,i)=>{voice(n,now+i*.2,12,'strings',.043);voice(n+12,now+.3+i*.13,11,'choir',.018);});
+[0,2,4,3,1,4].forEach((ix,i)=>voice(chord[ix]+12,now+1.2+i*1.8,1,'harp',.075));
+bar++;}
+function stop(){enabled=false;if(timer)clearInterval(timer);timer=null;gain();toggle.textContent='🎻 Orchestra 432 Hz';state.textContent='Orchestra off';}
+toggle.addEventListener('click',async()=>{try{if(!await wake()){state.textContent='Audio could not start';return;}if(enabled){stop();return;}enabled=true;gain();schedule();timer=setInterval(schedule,14000);toggle.textContent='♫ Music off';state.textContent='432 Hz orchestral soundscape playing';}catch(e){state.textContent='Audio error: '+e.message;}});
+volume.addEventListener('input',gain);
+test.addEventListener('click',async()=>{try{if(!await wake())return;const o=ctx.createOscillator(),g=ctx.createGain(),now=ctx.currentTime;o.type='sine';o.frequency.value=432;g.gain.setValueAtTime(.0001,now);g.gain.linearRampToValueAtTime(.23,now+.04);g.gain.exponentialRampToValueAtTime(.0001,now+1);o.connect(g);g.connect(ctx.destination);o.start(now);o.stop(now+1.1);state.textContent='432 Hz test tone';}catch(e){state.textContent=e.message;}});
+window.addEventListener('pagehide',()=>{if(timer)clearInterval(timer);if(ctx)ctx.close();});
+})();
+</script></body></html>
